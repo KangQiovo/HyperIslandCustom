@@ -4,7 +4,7 @@
 
 **✨ HyperOS 3 スーパーアイランド カスタマイズ Xposed モジュール — プレビュー版 ✨**
 
-🌐 [简体中文](README_zh-CN.md) | **日本語** | [English](README.md)
+🌐 [简体中文](README.md) | [繁體中文](README_zh-TW.md) | [English](README_en.md) | **日本語** | [한국어](README_ko.md) | [ไทย](README_th.md) | [العربية](README_ar.md)
 
 [![Android](https://img.shields.io/badge/Android-11%2B-34A853?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-30%2B-2196F3?style=for-the-badge)](https://developer.android.com/about/versions/11)
@@ -375,6 +375,15 @@ MIT License — Copyright (c) 2026 KangQi
 ```
 
 全文は [LICENSE](LICENSE) をご覧ください。
+
+---
+
+## 📬 お問い合わせ
+
+| プラットフォーム | アカウント | リンク |
+|----------------|----------|--------|
+| 🟢 **酷安 (CoolAPK)** | @KangQi_ovo | [プロフィール](http://www.coolapk.com/u/21241695) |
+| 🐙 **GitHub** | @KangQiovo | [github.com/KangQiovo](https://github.com/KangQiovo) |
 
 ---
 
