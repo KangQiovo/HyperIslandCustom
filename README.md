@@ -2,7 +2,7 @@
 
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
-<p style="font-size:2em; font-weight:bold;">Coming soon......</p>
+# Coming soon......
 
 <sub><a href="https://github.com/KangQiovo/HyperIslandCustom/tree/Preview">👉体验预览版 | Try the preview version👈</a></sub>
 
