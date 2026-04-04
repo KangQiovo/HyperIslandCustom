@@ -28,6 +28,7 @@
 - [📦 Requirements](#-requirements)
 - [🔧 Installation](#-installation)
 - [🏗️ Build from Source](#️-build-from-source)
+- [🧠 Implementation Principles](#-implementation-principles)
 - [📂 Project Structure](#-project-structure)
 - [🛠️ Tech Stack](#️-tech-stack)
 - [📝 Changelog](#-changelog)
@@ -123,6 +124,186 @@ cd HyperIslandCustom-Preview
 
 ---
 
+## 🧠 Implementation Principles
+
+### 🪝 Xposed Hook & Interception
+
+The module operates across **two processes** simultaneously:
+
+```
+┌─────────────────────┐         Broadcast          ┌─────────────────────┐
+│   📱 App Process     │  ───────────────────────▶  │  🖥️ SystemUI Process │
+│                     │   ACTION_SHOW_ISLAND       │                     │
+│  IslandManager      │                            │  MainHook           │
+│  ├─ buildIntent()   │                            │  ├─ BroadcastReceiver│
+│  ├─ loadBitmap()    │                            │  ├─ buildJSON()     │
+│  └─ sendBroadcast() │                            │  ├─ spoofPackage()  │
+│                     │                            │  └─ nm.notify()     │
+└─────────────────────┘                            └─────────────────────┘
+```
+
+**Step-by-step flow:**
+
+1. **Self-Hook** — The module hooks its own `isModuleActive()` method via `XC_MethodReplacement.returnConstant(true)` to report activation status.
+
+2. **SystemUI Injection** — Hooks `SystemUIApplication.onCreate()` to register a custom `BroadcastReceiver` in the SystemUI process for `ACTION_SHOW_ISLAND` / `ACTION_DISMISS_ISLAND`.
+
+3. **Config → JSON Mapping** — When `IslandManager.showIsland(config)` is called, 40+ fields from `IslandConfig` are packed into an `Intent` and broadcast. On the SystemUI side, the receiver builds a `miui.focus.param` JSON structure matching HyperOS 3's internal API:
+
+```json
+{
+  "param_v2": {
+    "templateType": 14,
+    "business": "navigation",
+    "baseInfo": { "title": "...", "content": "..." },
+    "param_island": {
+      "bigIslandArea": {
+        "imageTextInfoLeft": { ... },
+        "progressArea": { ... },
+        "buttonArea": { ... }
+      },
+      "smallIslandArea": { "type": 1 }
+    }
+  }
+}
+```
+
+4. **Package Spoofing** — To make the island render with the correct built-in template (e.g., navigation uses Amap template), the module intercepts:
+   - `StatusBarNotification.getPackageName()` → returns spoofed package
+   - `StatusBarNotification.getUid()` → returns spoofed app's real UID
+   - `Notification.getSmallIcon()` → loads the spoofed app's actual icon
+
+5. **Notification Posting** — A system notification with the crafted JSON is posted via `NotificationManager.notify()`, and HyperOS renders the Super Island using its native template engine.
+
+---
+
+### 🎨 Triple-Theme Architecture
+
+The theme system uses **CompositionLocal** for zero-prop-drilling access across the entire UI tree:
+
+```
+HyperIslandTheme(themeManager, backdrop)
+  ├─ Determine isDark (respects darkMode override)
+  ├─ Set transparent status/nav bars
+  ├─ Build colorScheme
+  │  ├─ MD3 → dynamicLightColorScheme / dynamicDarkColorScheme
+  │  └─ Others → static fallback palette
+  ├─ Wrap with MiuixTheme (for Miuix components)
+  ├─ Wrap with MaterialTheme (for MD3 components)
+  └─ Provide LocalIsDark, LocalBackdrop, LocalThemeManager
+```
+
+**ThemeManager** (DataStore-backed state machine):
+| Property | Options | Default |
+|----------|---------|---------|
+| `appTheme` | MIUIX / MD3 / LIQUID_GLASS | MIUIX |
+| `dockStyle` | MIUIX / MD3 / LIQUID_GLASS | LIQUID_GLASS |
+| `darkMode` | FOLLOW_SYSTEM / LIGHT / DARK | FOLLOW_SYSTEM |
+| `glassBarAlpha` | 0.0 ~ 1.0 | 0.4 |
+
+**Theme-Agnostic Components** (`HyperComponents.kt`):
+
+Every UI control adapts to the active theme automatically:
+
+```kotlin
+@Composable
+fun HyperSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    when (themeManager.appTheme) {
+        MIUIX        → MiuixSwitch(...)
+        LIQUID_GLASS → LiquidGlassToggle(...)     // Custom glass toggle
+        else         → Switch(...)                  // Material3
+    }
+}
+```
+
+15+ controls follow this pattern: `HyperSwitch`, `HyperSlider`, `HyperButton`, `HyperTextField`, `HyperDropdown`, `HyperFilterChip`, etc.
+
+---
+
+### 🫧 Glass Morphism Rendering
+
+Three-layer glass rendering using [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) Backdrop API:
+
+| Layer | Effect | Implementation |
+|-------|--------|----------------|
+| 🪟 **Backdrop** | Real-time blur + vibrancy | `drawBackdrop { blur(12f.dp); vibrancy() }` |
+| 🎨 **Tint** | Semi-transparent overlay | `drawRect(Color.White.copy(alpha=0.08f))` |
+| ✨ **Border** | Gradient edge highlight | `Brush.verticalGradient(White@0.12 → White@0.04)` |
+
+**LiquidGlassNavBar** — Floating bottom navigation with 3 sub-layers:
+1. Visible tab row with backdrop blur + lens effect
+2. Invisible tinted accent layer (SrcAtop blendMode for color bleed-through)
+3. Glass slider indicator with velocity-based deformation
+
+**Interactive Highlight** (Android 13+ RuntimeShader / AGSL):
+```glsl
+half4 main(float2 coord) {
+    float dist = distance(coord, position);
+    float intensity = smoothstep(radius, radius * 0.5, dist);
+    return color * intensity;    // Circular light following touch
+}
+```
+
+---
+
+### 🎢 Physics-Based Animation
+
+**DampedDragAnimation** — Liquid deformation system for the glass navbar slider:
+
+| Stream | Stiffness | Damping | Purpose |
+|--------|-----------|---------|---------|
+| Value | 1.0 | 1000 | Tab position |
+| Velocity | 0.5 | 300 | Drag speed |
+| Press | 1.0 | 1000 | Touch pressure |
+| ScaleXY | 0.6/0.7 | 250 | Squash/stretch |
+
+On fast drag release, velocity affects shape deformation:
+```
+scaleX /= 1 - velocity×0.75    → stretches horizontally
+scaleY *= 1 - velocity×0.25    → compresses vertically
+```
+This creates a **liquid squash & stretch** effect matching real-world physics.
+
+---
+
+### 📐 Unified HyperPage Layout
+
+Inspired by [OShin](https://github.com/suqi8/OShin)'s FunPage pattern, eliminates per-screen boilerplate:
+
+```kotlin
+HyperPage(title = "Settings", onBack = { nav.pop() }) {
+    // Content — automatically gets themed top bar, status bar insets, back button
+}
+```
+
+| Condition | Behavior |
+|-----------|----------|
+| `onBack != null` | Secondary page → themed top bar with back button + status bar padding |
+| `onBack == null` | Main page → scaffold handles title |
+| Theme = MIUIX | Native `MiuixTopAppBar` |
+| Theme = MD3 | Material3 `TopAppBar` |
+| Theme = LIQUID_GLASS | Custom `Row` with glass styling |
+
+---
+
+### 👆 HorizontalPager Navigation
+
+Dual-sync architecture between swipe gesture and bottom navigation:
+
+```kotlin
+// Sync 1: Swipe → updates selected route
+snapshotFlow { pagerState.currentPage }.collectLatest { page ->
+    selectedRoute = navItems[page].route
+}
+
+// Sync 2: Nav tap → animates pager
+pagerState.animateScrollToPage(targetPage)
+```
+
+4 main pages via `HorizontalPager`, 2 secondary pages (Logs, Credits) via `AnimatedContent` overlay with fade transitions.
+
+---
+
 ## 📂 Project Structure
 
 ```
@@ -130,17 +311,30 @@ app/src/main/java/com/kangqi/hIc/
 ├── 🏠 MainActivity.kt              # Single-activity, HorizontalPager navigation
 ├── 📝 log/                          # Runtime logging system
 ├── 📦 model/                        # Data classes (IslandConfig, scenarios, templates)
-├── ⚙️ service/                      # IslandManager (broadcast to SystemUI)
+│   ├── IslandConfig.kt             # 95-field config model matching HyperOS API
+│   ├── IslandScenario.kt           # 20+ preset scenarios (nav, taxi, music...)
+│   ├── IslandTemplate.kt           # Saveable template data class
+│   └── SpoofPackages.kt            # Known package name mappings
+├── ⚙️ service/
+│   └── IslandManager.kt            # Broadcast bridge (App → SystemUI)
 ├── 🎨 ui/
-│   ├── components/                  # Reusable UI components
+│   ├── components/
 │   │   ├── HyperPage.kt            # Unified page template
-│   │   ├── HyperComponents.kt      # Theme-aware component wrappers
+│   │   ├── HyperComponents.kt      # 15+ theme-agnostic UI controls
 │   │   ├── GlassCard.kt            # Glass morphism card containers
-│   │   └── LiquidGlassNavBar.kt    # Floating glass navigation bar
+│   │   ├── LiquidGlassNavBar.kt    # Floating glass navigation bar
+│   │   ├── DampedDragAnimation.kt  # Physics-based deformation
+│   │   └── InteractiveHighlight.kt # AGSL shader light effect
 │   ├── screens/                     # 6 screen composables
-│   └── theme/                       # ThemeManager, Color tokens, Triple-theme
-├── 🔧 utils/                        # Config backup, device info helpers
-└── 🪝 xposed/                       # Xposed hook entry point
+│   └── theme/
+│       ├── ThemeManager.kt          # DataStore-backed theme state machine
+│       ├── Theme.kt                 # Compose theme wrapper (3 themes)
+│       └── Color.kt                 # Color tokens + GlassTokens
+├── 🔧 utils/
+│   ├── ConfigBackupHelper.kt       # JSON import/export
+│   └── DeviceInfoHelper.kt         # System info collection
+└── 🪝 xposed/
+    └── MainHook.kt                  # Xposed hook entry (self-hook + SystemUI hook)
 ```
 
 ---
@@ -155,12 +349,14 @@ app/src/main/java/com/kangqi/hIc/
 | ⚡ Hook Framework | Xposed API 82 (LSPosed compatible) |
 | 💾 Storage | DataStore Preferences + SharedPreferences |
 | 🔨 Build System | Gradle Kotlin DSL, Compose BOM 2025.05.01 |
+| 🖼️ Glass Effects | Kyant0/AndroidLiquidGlass Backdrop API |
+| 🎨 Color Picker | skydoves/colorpicker-compose |
 
 ---
 
 ## 📝 Changelog
 
-### 🏷️ v1.0.0-preview — Initial Release
+### 🏷️ Preview0.18 — Initial Release
 
 - 🏝️ HyperOS 3 Super Island full customization
 - 🎨 Triple-theme system (Miuix / MD3 / Liquid Glass)
@@ -173,6 +369,9 @@ app/src/main/java/com/kangqi/hIc/
 - 💾 Config import/export (JSON)
 - 📊 Real-time log viewer with LSPosed log sync
 - 🫧 Floating Liquid Glass navigation bar
+- 🪝 Two-process Xposed hook architecture
+- 🎢 Physics-based glass navbar animations
+- ✨ AGSL RuntimeShader interactive highlights
 
 ---
 
