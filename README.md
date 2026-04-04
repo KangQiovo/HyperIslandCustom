@@ -2,9 +2,9 @@
 
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
-<h1>Coming soon......</h1>
+<p style="font-size:2em; font-weight:bold;">Coming soon......</p>
 
-<sub>👉 <a href="https://github.com/KangQiovo/HyperIslandCustom/tree/Preview">切换到 Preview 分支查看源码</a></sub>
+<sub><a href="https://github.com/KangQiovo/HyperIslandCustom/tree/Preview">👉体验预览版 | Try the preview version👈</a></sub>
 
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
