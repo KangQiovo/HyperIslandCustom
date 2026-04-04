@@ -1,4 +1,0 @@
--keep class com.kangqi.hIc.xposed.** { *; }
--keep class de.robv.android.xposed.** { *; }
--keepattributes RuntimeVisibleAnnotations
--keep class com.kyant.backdrop.** { *; }
