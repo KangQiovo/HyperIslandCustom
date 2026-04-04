@@ -33,7 +33,6 @@
 - [📝 Changelog](#-changelog)
 - [🙏 Credits](#-credits)
 - [📄 License](#-license)
-- [📬 Contact](#-contact)
 
 ---
 
@@ -354,19 +353,10 @@ See [LICENSE](LICENSE) for full text.
 
 ---
 
-## 📬 Contact
-
-| Platform | Account | Link |
-|----------|---------|------|
-| 🟢 **CoolAPK** | @KangQi_ovo | [Profile](http://www.coolapk.com/u/21241695) |
-| 🐙 **GitHub** | @KangQiovo | [github.com/KangQiovo](https://github.com/KangQiovo) |
-
----
-
 <div align="center">
 
 **⭐ Star this project if you find it useful! ⭐**
 
-Made with ❤️ by [KangQi](https://github.com/KangQiovo)
+Made with ❤️ by [KangQi](http://www.coolapk.com/u/21241695)
 
 </div>

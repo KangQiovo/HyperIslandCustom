@@ -182,19 +182,10 @@ MIT License — Copyright (c) 2026 KangQi
 
 ---
 
-## 📬 التواصل
-
-| المنصة | الحساب | الرابط |
-|--------|--------|--------|
-| 🟢 **酷安 (CoolAPK)** | @KangQi_ovo | [الملف الشخصي](http://www.coolapk.com/u/21241695) |
-| 🐙 **GitHub** | @KangQiovo | [github.com/KangQiovo](https://github.com/KangQiovo) |
-
----
-
 <div align="center">
 
 **⭐ !إذا وجدت هذا المشروع مفيداً، يرجى إعطاء نجمة ⭐**
 
-Made with ❤️ by [KangQi](https://github.com/KangQiovo)
+Made with ❤️ by [KangQi](http://www.coolapk.com/u/21241695)
 
 </div>

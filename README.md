@@ -34,7 +34,6 @@
 - [📝 更新日志](#-更新日志)
 - [🙏 致谢](#-致谢)
 - [📄 开源协议](#-开源协议)
-- [📬 联系方式](#-联系方式)
 
 ---
 
@@ -400,19 +399,10 @@ MIT License — Copyright (c) 2026 KangQi
 
 ---
 
-## 📬 联系方式
-
-| 平台 | 账号 | 链接 |
-|------|------|------|
-| 🟢 **酷安** | @KangQi_ovo | [个人主页](http://www.coolapk.com/u/21241695) |
-| 🐙 **GitHub** | @KangQiovo | [github.com/KangQiovo](https://github.com/KangQiovo) |
-
----
-
 <div align="center">
 
 **⭐ 如果觉得有用，请给项目点个 Star！⭐**
 
-Made with ❤️ by [KangQi](https://github.com/KangQiovo)
+Made with ❤️ by [KangQi](http://www.coolapk.com/u/21241695)
 
 </div>
