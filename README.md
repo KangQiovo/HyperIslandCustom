@@ -2,9 +2,8 @@
 
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
-# Coming soon......
-
-<sub><a href="https://github.com/KangQiovo/HyperIslandCustom/tree/Preview">👉体验预览版 | Try the preview version👈</a></sub>
+<h1 align="center">Coming soon......</h1>
+<p><a href="https://github.com/KangQiovo/HyperIslandCustom/tree/Preview">👉体验预览版 | Try the preview version👈</a></p>
 
 <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
